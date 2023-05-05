@@ -18,19 +18,19 @@ async function login(email, password) {
 }
 
 async function fetchChats() {
-  const res = await fetch('/chats');
+  const res = await fetch('auth/chats');
   const chats = await res.json();
   return chats;
 }
 
 async function fetchUsers() {
-  const res = await fetch('/users');
+  const res = await fetch('auth/users');
   const users = await res.json();
   return users;
 }
 
-async function fetchChatByID(id) {
-  const res = await fetch(`/chats/${id}`);
+async function fetchMsgsByChatID(id) {
+  const res = await fetch(`auth/messages?chat_id=${id}`);
   const chat = await res.json();
   return chat;
 }
@@ -125,27 +125,27 @@ InputArea.propTypes = {
   onClick: PropTypes.func.isRequired,
 };
 
-function ChatView({ chat, onClickBack }) {
+function ChatView({ chat, onClickBack, userMe }) {
   const [messages, setMessages] = React.useState(null);
 
-  const onClickSend = (text, image = null) => {
+  const onClickSend = async (text, image = null) => {
     const message = {
-      id: 123,
-      chat_id: 1,
+      created_by: userMe.id,
+      chat_id: chat.id,
       content: {
         text,
         image,
       },
     };
 
-    postJSON('/messages', message);
+    await postJSON('/messages', message);
     messages.push(message);
     setMessages(messages.slice());
   };
 
   React.useEffect(() => {
     if (messages) return;
-    fetchChatByID(chat.id).then((fetchedMessages) => {
+    fetchMsgsByChatID(chat.id).then((fetchedMessages) => {
       setMessages(fetchedMessages);
     });
   }, [chat.id]);
@@ -161,7 +161,7 @@ function ChatView({ chat, onClickBack }) {
           ? (
             <div className="message-container">
               {messages.map((message) => (
-                <div key={message.id} className="message">
+                <div key={message.id} className={`message ${message.created_by === userMe.id ? 'outgoing' : 'incoming'}`}>
                   {message.content.text}
                 </div>
               ))}
@@ -180,6 +180,11 @@ ChatView.propTypes = {
     members: PropTypes.arrayOf(PropTypes.number),
   }).isRequired,
   onClickBack: PropTypes.func.isRequired,
+  userMe: PropTypes.shape({
+    id: PropTypes.number,
+    email: PropTypes.string,
+    display_name: PropTypes.string,
+  }).isRequired,
 };
 
 function App() {
@@ -200,7 +205,7 @@ function App() {
   const unsetCurrentChat = () => setCurrentChat(null);
 
   React.useEffect(() => {
-    if (chats || users) return;
+    if (chats || users || !user) return;
     Promise.all([fetchChats(), fetchUsers()]).then(([chatsPromise, usersPromise]) => {
       setUsers(usersPromise);
       setChats(chatsPromise);
@@ -219,6 +224,7 @@ function App() {
         <ChatView
           chat={currentChat}
           onClickBack={unsetCurrentChat}
+          userMe={user}
         />
       </div>
     );
