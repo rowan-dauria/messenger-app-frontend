@@ -1,0 +1,25 @@
+.Login {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin: 30vh 20vw;
+}
+
+.Login > * {
+    max-width: 200px;
+    border-color: black;
+
+}
+.Login > input {
+    margin: 5px;
+    padding: 5px;
+    border-radius: 7px;
+    border-style: solid;
+}
+
+.Login > button {
+    margin-top: 10px;
+    padding: 3px;
+    border-radius: 5px;
+    border-style: solid;
+}

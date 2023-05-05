@@ -1,5 +1,6 @@
 import React from 'react';
 import PropTypes from 'prop-types';
+import './login.css';
 
 export default function Login({ loginCallback }) {
   const [email, setEmail] = React.useState(null);
@@ -14,7 +15,7 @@ export default function Login({ loginCallback }) {
     <div className="Login">
       <input type="text" className="email" placeholder="email" onChange={(e) => setEmail(e.target.value)} />
       <input type="text" className="password" placeholder="password" onChange={(e) => setPassword(e.target.value)} />
-      <button type="button" onClick={onClickLogin}>Login</button>
+      <button type="button" onClick={onClickLogin} disabled={!email || !password}>Login</button>
     </div>
   );
 }
