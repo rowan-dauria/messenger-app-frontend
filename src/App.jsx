@@ -1,7 +1,10 @@
 import React from 'react';
 import PropTypes from 'prop-types';
+import io from 'socket.io-client';
 import Login from './login';
 import './App.css';
+
+const socket = io('http://localhost:3000', { autoConnect: false });
 
 async function login(email, password) {
   const bodyJSON = { email, password };
@@ -137,8 +140,8 @@ function ChatView({ chat, onClickBack, userMe }) {
         image,
       },
     };
+    socket.emit('message to server', message);
 
-    await postJSON('/messages', message);
     messages.push(message);
     setMessages(messages.slice());
   };
@@ -149,6 +152,11 @@ function ChatView({ chat, onClickBack, userMe }) {
       setMessages(fetchedMessages);
     });
   }, [chat.id]);
+
+  socket.on('message to client', (message) => {
+    messages.push(message);
+    setMessages(messages.slice());
+  });
 
   return (
     <div className="ChatView">
@@ -210,6 +218,12 @@ function App() {
       setUsers(usersPromise);
       setChats(chatsPromise);
     });
+    }
+    socket.connect();
+    // return value of useEffect callback is a function called when the component is unmounted
+    return function cleanup() {
+      socket.disconnect();
+    };
   });
 
   if (!user) {
