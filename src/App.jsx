@@ -325,40 +325,41 @@ function App() {
     };
   });
 
-  if (!user) {
-    return (
-      <Login loginCallback={authenticateUser} />
-    );
-  }
+  function showView() {
+    if (!user) return (<Login loginCallback={authenticateUser} />);
 
-  if (currentChat) {
     return (
       <div className="App">
-        <ChatView
-          chat={currentChat}
-          onClickBack={unsetCurrentChat}
-          userMe={user}
-        />
+        <div className="ChatList-ChatView-container">
+          {
+            (chats)
+              ? (
+                <ChatList
+                  chatsArray={chats}
+                  usersArray={users}
+                  tileClickHandler={openChat}
+                  userMe={user}
+                />
+              )
+              : <LoadingMessage />
+          }
+          {
+            (currentChat)
+              ? (
+                <ChatView
+                  chat={currentChat}
+                  onClickBack={unsetCurrentChat}
+                  userMe={user}
+                />
+              )
+              : null
+          }
+        </div>
       </div>
     );
   }
 
-  return (
-    <div className="App">
-      {
-        (chats)
-          ? (
-            <ChatList
-              chatsArray={chats}
-              usersArray={users}
-              tileClickHandler={openChat}
-              userMe={user}
-            />
-          )
-          : <LoadingMessage />
-      }
-    </div>
-  );
+  return showView();
 }
 
 export default App;
