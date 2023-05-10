@@ -1,67 +1,86 @@
 .App {
-    text-align: center;
+  text-align: center;
+
+  .ChatList-ChatView-container {
+    display: grid;
+    grid-template-areas: 'ChatList ChatView';
+    grid-template-columns: auto auto;
   }
-  
-  .ChatList {
-    float: right;
+}
+
+.ChatList {
+  grid-area: ChatList;
+
+  width: 20dvw;
+
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+
+  padding-top: 1em;
+
+  .list-container {
     display: flex;
     flex-direction: column;
-    justify-content: space-around;
   }
-  
-  .ChatList .list-container {
-    display: flex;
-    flex-direction: column;
-  }
-  
-  .ChatList button {
-    width: max-content;
-  }
-  
-  .ChatTile {
-    margin: 10px 15px;
-  }
-  
-  .ChatView {
-    height: 100dvh;
-    max-height: 100dvh;
-    display: flex;
-    flex-direction: column;
-    justify-content: space-between;
-  }
-  
-  .ChatView header {
+
+  border-right: 1px solid ;
+  background-color:royalblue;
+
+}
+
+.ChatTile {
+  margin: 10px 15px;
+}
+
+.ChatView {
+  grid-area: ChatView;
+
+  height: 100dvh;
+  max-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+
+  header {
     padding: 1em;
   }
-  
-  .ChatView header button {
+
+  header button {
     margin: 0 auto 0 0.3em;
   }
-  
-  .ChatView .message {
-    margin: 10px;
-    background-color: rgba(254, 227, 227, 0.866);
-    padding: .4em .5em;
-    border-radius: 1.8em;
-    max-width: 50vw;
-    word-break: break-all;
-  }
-  
-  .ChatView .message.outgoing {
-    margin-left: auto;
-  }
-  
+
   .message-container {
     flex-grow: 1;
     display: flex;
     flex-direction: column;
     overflow-y: auto;
   }
-  
-  .InputArea {
-    padding: 1em;
-  }
-  
+
   .message {
+    margin: 10px;
+    background-color: rgba(254, 227, 227, 0.866);
+    padding: .4em .5em;
+    border-radius: 1.8em;
+    max-width: 50vw;
     width: max-content;
+    word-break: break-all;
   }
+
+  .outgoing {
+    margin-left: auto;
+  }
+}
+
+.InputArea {
+  padding: 1em;
+}
+
+button {
+  width: max-content;
+  border: unset;
+  background-color: lightskyblue;
+  padding: .4em .6em;
+  border-radius: 1.8em;
+  box-shadow: inset .1em -.08em lightslategray;
+}
