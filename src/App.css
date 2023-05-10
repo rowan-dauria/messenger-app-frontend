@@ -3,8 +3,19 @@
 }
 
 .ChatList {
+  float: right;
   display: flex;
+  flex-direction: column;
   justify-content: space-around;
+}
+
+.ChatList .list-container {
+  display: flex;
+  flex-direction: column;
+}
+
+.ChatList button {
+  width: max-content;
 }
 
 .ChatTile {
@@ -12,10 +23,19 @@
 }
 
 .ChatView {
-  height: 100vh;
+  height: 100dvh;
+  max-height: 100dvh;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
+}
+
+.ChatView header {
+  padding: 1em;
+}
+
+.ChatView header button {
+  margin: 0 auto 0 0.3em;
 }
 
 .ChatView .message {
@@ -35,7 +55,11 @@
   flex-grow: 1;
   display: flex;
   flex-direction: column;
-  justify-content: flex-end;
+  overflow-y: auto;
+}
+
+.InputArea {
+  padding: 1em;
 }
 
 .message {

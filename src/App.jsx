@@ -38,6 +38,11 @@ async function fetchMsgsByChatID(id) {
   return chat;
 }
 
+async function fetchMyUser() {
+  const res = await fetch('auth/users/me');
+  return res;
+}
+
 async function postJSON(endpoint, JSONData) {
   const res = await fetch(endpoint, {
     method: 'POST',
@@ -50,6 +55,38 @@ async function postJSON(endpoint, JSONData) {
   const json = await res.json();
   return json;
 }
+
+function NewChat({ onChangeName, onChangeMembers, onClickSaveNewchat }) {
+  return (
+    <div>
+      <input
+        type="text"
+        placeholder="Name"
+        onChange={(e) => {
+          const name = e.target.value;
+          onChangeName(name);
+        }}
+      />
+      <input
+        type="text"
+        placeholder="User email"
+        onChange={(e) => {
+          const email = e.target.value;
+          onChangeMembers(email);
+        }}
+      />
+      <button type="button" onClick={onClickSaveNewchat}>
+        <span>Save</span>
+      </button>
+    </div>
+  );
+}
+
+NewChat.propTypes = {
+  onChangeName: PropTypes.func.isRequired,
+  onChangeMembers: PropTypes.func.isRequired,
+  onClickSaveNewchat: PropTypes.func.isRequired,
+};
 
 function ChatTile({ chatName, chatID, onClick }) {
   return (
@@ -74,24 +111,69 @@ function LoadingMessage() {
   );
 }
 
-function ChatList({ chatsArray, usersArray, tileClickHandler }) {
-  const usernameObj = usersArray.reduce((accumulatorObj, user) => {
-    const obj = { ...accumulatorObj };
-    obj[user.id] = user.display_name;
-    return obj;
-  }, {});
+function ChatList({
+  chatsArray,
+  usersArray,
+  tileClickHandler,
+  userMe,
+}) {
+  const [chatsToShow, setChatsToShow] = React.useState(chatsArray);
+  const [showModal, setShowModal] = React.useState(false);
+  const [newChatName, setNewChatName] = React.useState(null);
+  const [newChatMemberEmails, setNewChatMemberEmails] = React.useState(null);
+  const ref = React.useRef(null);
+
+  React.useCallback(
+    () => {
+      socket.emit('chats join', chatsToShow.map((chat) => chat.id));
+    },
+    [chatsToShow],
+  );
+
+  React.useEffect(() => {
+    if (showModal && !(ref.current.open)) ref.current.showModal();
+  }, [showModal]);
+
+  const onClickSaveNewchat = async () => {
+    if (newChatName && newChatMemberEmails) {
+      const memberIds = usersArray.filter((user) => user.email === newChatMemberEmails)[0].id;
+      const newChat = await postJSON('/auth/chats', {
+        name: newChatName,
+        members: [userMe.id, memberIds],
+      });
+      chatsToShow.push(newChat);
+      setChatsToShow(chatsToShow.slice());
+      if (ref.current.open) ref.current.close();
+    }
+  };
+
   return (
     <div className="ChatList">
-      {
-        chatsArray.map((chat) => (
-          <ChatTile
-            key={chat.id}
-            chatName={chat.members.map((chatMemberID) => usernameObj[chatMemberID]).toString()}
-            chatID={chat.id}
-            onClick={tileClickHandler}
-          />
-        ))
-      }
+      <button
+        type="button"
+        onClick={() => setShowModal(true)}
+      >
+        <span>New Chat</span>
+      </button>
+      <div className="list-container">
+        {
+          chatsToShow.map((chat) => (
+            <ChatTile
+              key={chat.id}
+              chatName={chat.name}
+              chatID={chat.id}
+              onClick={tileClickHandler}
+            />
+          ))
+        }
+      </div>
+      <dialog ref={ref}>
+        <NewChat
+          onChangeName={setNewChatName}
+          onChangeMembers={setNewChatMemberEmails}
+          onClickSaveNewchat={onClickSaveNewchat}
+        />
+      </dialog>
     </div>
   );
 }
@@ -100,6 +182,11 @@ ChatList.propTypes = {
   chatsArray: PropTypes.arrayOf(PropTypes.object).isRequired,
   usersArray: PropTypes.arrayOf(PropTypes.object).isRequired,
   tileClickHandler: PropTypes.func.isRequired,
+  userMe: PropTypes.shape({
+    id: PropTypes.number,
+    email: PropTypes.string,
+    display_name: PropTypes.string,
+  }).isRequired,
 };
 
 function InputArea({ onClick }) {
@@ -162,7 +249,7 @@ function ChatView({ chat, onClickBack, userMe }) {
     <div className="ChatView">
       <header>
         <button type="button" onClick={onClickBack}>Back</button>
-        A CHAT
+        {chat.name}
       </header>
       {
         messages && messages.length
@@ -185,6 +272,7 @@ function ChatView({ chat, onClickBack, userMe }) {
 ChatView.propTypes = {
   chat: PropTypes.shape({
     id: PropTypes.number,
+    name: PropTypes.string,
     members: PropTypes.arrayOf(PropTypes.number),
   }).isRequired,
   onClickBack: PropTypes.func.isRequired,
@@ -201,9 +289,19 @@ function App() {
   const [users, setUsers] = React.useState(null);
   const [currentChat, setCurrentChat] = React.useState(null);
 
+  if (!user) {
+    fetchMyUser()
+      .then((res) => {
+        if (res.status === 403) throw new Error('unauthorised request');
+        return res.json();
+      })
+      .then((myUser) => setUser(myUser))
+      .catch((err) => console.error(err));
+  }
+
   const authenticateUser = async (email, password) => {
     const authUser = await login(email, password);
-    setUser(authUser);
+    setUser(authUser.user);
   };
 
   const openChat = (chatID) => {
@@ -213,11 +311,13 @@ function App() {
   const unsetCurrentChat = () => setCurrentChat(null);
 
   React.useEffect(() => {
-    if (chats || users || !user) return;
-    Promise.all([fetchChats(), fetchUsers()]).then(([chatsPromise, usersPromise]) => {
-      setUsers(usersPromise);
-      setChats(chatsPromise);
-    });
+    // cancels if chats have already been fetched, or if the user has not been set
+    // need to know the user to know what chats to fetch.
+    if (!chats && !users && user) {
+      Promise.all([fetchChats(), fetchUsers()]).then(([chatsPromise, usersPromise]) => {
+        setUsers(usersPromise);
+        setChats(chatsPromise);
+      });
     }
     socket.connect();
     // return value of useEffect callback is a function called when the component is unmounted
@@ -248,7 +348,14 @@ function App() {
     <div className="App">
       {
         (chats)
-          ? <ChatList chatsArray={chats} usersArray={users} tileClickHandler={openChat} />
+          ? (
+            <ChatList
+              chatsArray={chats}
+              usersArray={users}
+              tileClickHandler={openChat}
+              userMe={user}
+            />
+          )
           : <LoadingMessage />
       }
     </div>
