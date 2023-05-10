@@ -2,7 +2,6 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import io from 'socket.io-client';
 import Login from './login';
-import './App.css';
 
 const socket = io('http://localhost:3000', { autoConnect: false });
 

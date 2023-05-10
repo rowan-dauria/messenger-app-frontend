@@ -1,6 +1,5 @@
 import React from 'react';
 import PropTypes from 'prop-types';
-import './login.css';
 
 export default function Login({ loginCallback }) {
   const [email, setEmail] = React.useState(null);
