@@ -215,7 +215,7 @@ InputArea.propTypes = {
 };
 
 function ChatView({ chat, userMe }) {
-  const [messages, setMessages] = React.useState(null);
+  const [messages, setMessages] = React.useState([]);
 
   const onClickSend = async (text, image = null) => {
     const message = {
@@ -233,7 +233,7 @@ function ChatView({ chat, userMe }) {
   };
 
   React.useEffect(() => {
-    if (messages) return;
+    if (messages.length) return;
     fetchMsgsByChatID(chat.id).then((fetchedMessages) => {
       setMessages(fetchedMessages);
     });
