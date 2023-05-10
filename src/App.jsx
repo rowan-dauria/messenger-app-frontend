@@ -140,7 +140,7 @@ function ChatList({
         name: newChatName,
         members: [userMe.id, memberIds],
       });
-      chatsToShow.push(newChat);
+      chatsToShow.push(newChat[0]);
       setChatsToShow(chatsToShow.slice());
       if (ref.current.open) ref.current.close();
     }
@@ -214,7 +214,7 @@ InputArea.propTypes = {
   onClick: PropTypes.func.isRequired,
 };
 
-function ChatView({ chat, onClickBack, userMe }) {
+function ChatView({ chat, userMe }) {
   const [messages, setMessages] = React.useState(null);
 
   const onClickSend = async (text, image = null) => {
@@ -247,7 +247,6 @@ function ChatView({ chat, onClickBack, userMe }) {
   return (
     <div className="ChatView">
       <header>
-        <button type="button" onClick={onClickBack}>Back</button>
         {chat.name}
       </header>
       {
@@ -274,7 +273,6 @@ ChatView.propTypes = {
     name: PropTypes.string,
     members: PropTypes.arrayOf(PropTypes.number),
   }).isRequired,
-  onClickBack: PropTypes.func.isRequired,
   userMe: PropTypes.shape({
     id: PropTypes.number,
     email: PropTypes.string,
@@ -306,8 +304,6 @@ function App() {
   const openChat = (chatID) => {
     setCurrentChat(chats.filter((chat) => chat.id === chatID)[0]);
   };
-
-  const unsetCurrentChat = () => setCurrentChat(null);
 
   React.useEffect(() => {
     // cancels if chats have already been fetched, or if the user has not been set
@@ -348,7 +344,6 @@ function App() {
               ? (
                 <ChatView
                   chat={currentChat}
-                  onClickBack={unsetCurrentChat}
                   userMe={user}
                 />
               )
