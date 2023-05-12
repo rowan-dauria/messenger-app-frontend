@@ -114,7 +114,7 @@ function ChatList({
   chatsArray,
   usersArray,
   tileClickHandler,
-  userMe,
+  myUser,
 }) {
   const [chatsToShow, setChatsToShow] = React.useState(chatsArray);
   const [showModal, setShowModal] = React.useState(false);
@@ -138,7 +138,7 @@ function ChatList({
       const memberIds = usersArray.filter((user) => user.email === newChatMemberEmails)[0].id;
       const newChat = await postJSON('/auth/chats', {
         name: newChatName,
-        members: [userMe.id, memberIds],
+        members: [myUser.id, memberIds],
       });
       chatsToShow.push(newChat[0]);
       setChatsToShow(chatsToShow.slice());
@@ -181,7 +181,7 @@ ChatList.propTypes = {
   chatsArray: PropTypes.arrayOf(PropTypes.object).isRequired,
   usersArray: PropTypes.arrayOf(PropTypes.object).isRequired,
   tileClickHandler: PropTypes.func.isRequired,
-  userMe: PropTypes.shape({
+  myUser: PropTypes.shape({
     id: PropTypes.number,
     email: PropTypes.string,
     display_name: PropTypes.string,
