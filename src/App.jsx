@@ -188,141 +188,77 @@ ChatList.propTypes = {
   }).isRequired,
 };
 
-function InputArea({ onClick }) {
-  const [text, setText] = React.useState(null);
-  return (
-    <div className="InputArea">
-      <input
-        type="text"
-        onChange={(e) => setText(e.target.value)}
-      />
-      <button
-        disabled={!text}
-        type="button"
-        onClick={() => {
-          if (!text) return;
-          onClick(text);
-        }}
-      >
-        Send
-      </button>
-    </div>
-  );
-}
+function App() {
+  const [myUser, setMyUser] = React.useState(null);
+  const [chats, setChats] = React.useState(null);
+  const [users, setUsers] = React.useState(null);
+  const [currentChat, setCurrentChat] = React.useState(null);
+  const [currentChatMessages, setCurrentChatMessages] = React.useState([{ loading: true }]);
 
-InputArea.propTypes = {
-  onClick: PropTypes.func.isRequired,
-};
-
-function ChatView({ chat, userMe }) {
-  const [messages, setMessages] = React.useState([]);
-
-  const onClickSend = async (text, image = null) => {
+  const onClickSendMessage = async (text, chatID, image = null) => {
     const message = {
-      created_by: userMe.id,
-      chat_id: chat.id,
+      created_by: myUser.id,
+      chat_id: chatID,
       content: {
         text,
         image,
       },
     };
     socket.emit('message to server', message);
+    console.log(`socket ${socket.id} sending message to server`);
 
-    messages.push(message);
-    setMessages(messages.slice());
+    currentChatMessages.push(message);
+    setCurrentChatMessages(currentChatMessages.slice());
   };
 
-  React.useEffect(() => {
-    if (messages.length) return;
-    fetchMsgsByChatID(chat.id).then((fetchedMessages) => {
-      setMessages(fetchedMessages);
+  const authenticateUser = async (email, password) => {
+    const authUser = await login(email, password);
+    setMyUser(authUser.user);
+    if (!socket.connected) socket.connect();
+  };
+
+  const openChat = (chatID) => {
+    setCurrentChat(chats.filter((chat) => chat.id === chatID)[0]);
+    fetchMsgsByChatID(chatID).then((fetchedMessages) => {
+      setCurrentChatMessages(fetchedMessages);
     });
-  }, [chat.id]);
+  };
 
   socket.on('message to client', (message) => {
-    messages.push(message);
-    setMessages(messages.slice());
+    currentChatMessages.push(message);
+    setCurrentChatMessages(currentChatMessages.slice());
   });
 
-  return (
-    <div className="ChatView">
-      <header>
-        {chat.name}
-      </header>
-      {
-        messages && messages.length
-          ? (
-            <div className="message-container">
-              {messages.map((message) => (
-                <div key={message.id} className={`message ${message.created_by === userMe.id ? 'outgoing' : 'incoming'}`}>
-                  {message.content.text}
-                </div>
-              ))}
-            </div>
-          )
-          : <div className="no-messages">no messages found</div>
-      }
-      <InputArea onClick={onClickSend} />
-    </div>
-  );
-}
+  React.useEffect(() => {
+    // cancels if chats have already been fetched, or if the user has not been set
+    // need to know the user to know what chats to fetch.
+    if (myUser) {
+      Promise.all([fetchChats(), fetchUsers()]).then(([chatsPromise, usersPromise]) => {
+        setUsers(usersPromise);
+        setChats(chatsPromise);
+        socket.emit(
+          'chats join',
+          { chatIds: chatsPromise.map((chat) => `chat_id_${chat.id}`) },
+        );
+      });
+    }
+  }, [myUser]);
 
-ChatView.propTypes = {
-  chat: PropTypes.shape({
-    id: PropTypes.number,
-    name: PropTypes.string,
-    members: PropTypes.arrayOf(PropTypes.number),
-  }).isRequired,
-  userMe: PropTypes.shape({
-    id: PropTypes.number,
-    email: PropTypes.string,
-    display_name: PropTypes.string,
-  }).isRequired,
-};
-
-function App() {
-  const [user, setUser] = React.useState(null);
-  const [chats, setChats] = React.useState(null);
-  const [users, setUsers] = React.useState(null);
-  const [currentChat, setCurrentChat] = React.useState(null);
-
-  if (!user) {
+  if (!myUser) {
     fetchMyUser()
       .then((res) => {
         if (res.status === 403) throw new Error('unauthorised request');
         return res.json();
       })
-      .then((myUser) => setUser(myUser))
+      .then((user) => setMyUser(user))
+      .then(() => {
+        if (!socket.connected) socket.connect();
+      })
       .catch((err) => console.error(err));
   }
 
-  const authenticateUser = async (email, password) => {
-    const authUser = await login(email, password);
-    setUser(authUser.user);
-  };
-
-  const openChat = (chatID) => {
-    setCurrentChat(chats.filter((chat) => chat.id === chatID)[0]);
-  };
-
-  React.useEffect(() => {
-    // cancels if chats have already been fetched, or if the user has not been set
-    // need to know the user to know what chats to fetch.
-    if (!chats && !users && user) {
-      Promise.all([fetchChats(), fetchUsers()]).then(([chatsPromise, usersPromise]) => {
-        setUsers(usersPromise);
-        setChats(chatsPromise);
-      });
-    }
-    socket.connect();
-    // return value of useEffect callback is a function called when the component is unmounted
-    return function cleanup() {
-      socket.disconnect();
-    };
-  });
-
   function showView() {
-    if (!user) return (<Login loginCallback={authenticateUser} />);
+    if (!myUser) return (<Login loginCallback={authenticateUser} />);
 
     return (
       <div className="App">
@@ -334,7 +270,7 @@ function App() {
                   chatsArray={chats}
                   usersArray={users}
                   tileClickHandler={openChat}
-                  userMe={user}
+                  myUser={myUser}
                 />
               )
               : <LoadingMessage />
@@ -344,7 +280,9 @@ function App() {
               ? (
                 <ChatView
                   chat={currentChat}
-                  userMe={user}
+                  myUser={myUser}
+                  onClickSendMessage={onClickSendMessage}
+                  chatMessages={currentChatMessages}
                 />
               )
               : null
