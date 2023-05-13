@@ -1,9 +1,11 @@
 import React from 'react';
-import PropTypes from 'prop-types';
 import io from 'socket.io-client';
 import Login from './login';
+import ChatView from './ChatView';
+import ChatList from './ChatList';
 
 const socket = io('http://localhost:3000', { autoConnect: false });
+socket.on('connect', () => console.log(socket.id));
 
 async function login(email, password) {
   const bodyJSON = { email, password };
@@ -55,53 +57,6 @@ async function postJSON(endpoint, JSONData) {
   return json;
 }
 
-function NewChat({ onChangeName, onChangeMembers, onClickSaveNewchat }) {
-  return (
-    <div>
-      <input
-        type="text"
-        placeholder="Name"
-        onChange={(e) => {
-          const name = e.target.value;
-          onChangeName(name);
-        }}
-      />
-      <input
-        type="text"
-        placeholder="User email"
-        onChange={(e) => {
-          const email = e.target.value;
-          onChangeMembers(email);
-        }}
-      />
-      <button type="button" onClick={onClickSaveNewchat}>
-        <span>Save</span>
-      </button>
-    </div>
-  );
-}
-
-NewChat.propTypes = {
-  onChangeName: PropTypes.func.isRequired,
-  onChangeMembers: PropTypes.func.isRequired,
-  onClickSaveNewchat: PropTypes.func.isRequired,
-};
-
-function ChatTile({ chatName, chatID, onClick }) {
-  return (
-    <button type="button" className="ChatTile" onClick={() => onClick(chatID)}>
-      <span className="chat-name">{chatName}</span>
-    </button>
-  );
-}
-
-ChatTile.propTypes = {
-  chatName: PropTypes.string.isRequired,
-  chatID: PropTypes.number.isRequired,
-  onClick: PropTypes.func.isRequired,
-
-};
-
 function LoadingMessage() {
   return (
     <div className="LoadingMessage">
@@ -109,84 +64,6 @@ function LoadingMessage() {
     </div>
   );
 }
-
-function ChatList({
-  chatsArray,
-  usersArray,
-  tileClickHandler,
-  myUser,
-}) {
-  const [chatsToShow, setChatsToShow] = React.useState(chatsArray);
-  const [showModal, setShowModal] = React.useState(false);
-  const [newChatName, setNewChatName] = React.useState(null);
-  const [newChatMemberEmails, setNewChatMemberEmails] = React.useState(null);
-  const ref = React.useRef(null);
-
-  React.useCallback(
-    () => {
-      socket.emit('chats join', chatsToShow.map((chat) => chat.id));
-    },
-    [chatsToShow],
-  );
-
-  React.useEffect(() => {
-    if (showModal && !(ref.current.open)) ref.current.showModal();
-  }, [showModal]);
-
-  const onClickSaveNewchat = async () => {
-    if (newChatName && newChatMemberEmails) {
-      const memberIds = usersArray.filter((user) => user.email === newChatMemberEmails)[0].id;
-      const newChat = await postJSON('/auth/chats', {
-        name: newChatName,
-        members: [myUser.id, memberIds],
-      });
-      chatsToShow.push(newChat[0]);
-      setChatsToShow(chatsToShow.slice());
-      if (ref.current.open) ref.current.close();
-    }
-  };
-
-  return (
-    <div className="ChatList">
-      <button
-        type="button"
-        onClick={() => setShowModal(true)}
-      >
-        <span>New Chat</span>
-      </button>
-      <div className="list-container">
-        {
-          chatsToShow.map((chat) => (
-            <ChatTile
-              key={chat.id}
-              chatName={chat.name}
-              chatID={chat.id}
-              onClick={tileClickHandler}
-            />
-          ))
-        }
-      </div>
-      <dialog ref={ref}>
-        <NewChat
-          onChangeName={setNewChatName}
-          onChangeMembers={setNewChatMemberEmails}
-          onClickSaveNewchat={onClickSaveNewchat}
-        />
-      </dialog>
-    </div>
-  );
-}
-
-ChatList.propTypes = {
-  chatsArray: PropTypes.arrayOf(PropTypes.object).isRequired,
-  usersArray: PropTypes.arrayOf(PropTypes.object).isRequired,
-  tileClickHandler: PropTypes.func.isRequired,
-  myUser: PropTypes.shape({
-    id: PropTypes.number,
-    email: PropTypes.string,
-    display_name: PropTypes.string,
-  }).isRequired,
-};
 
 function App() {
   const [myUser, setMyUser] = React.useState(null);
@@ -209,6 +86,19 @@ function App() {
 
     currentChatMessages.push(message);
     setCurrentChatMessages(currentChatMessages.slice());
+  };
+
+  const onClickSaveNewchat = async (newChatName, newChatMemberEmails, dialog) => {
+    if (newChatName && newChatMemberEmails) {
+      const memberIds = users.filter((user) => user.email === newChatMemberEmails)[0].id;
+      const newChat = await postJSON('/auth/chats', {
+        name: newChatName,
+        members: [myUser.id, memberIds],
+      });
+      chats.push(newChat[0]);
+      setChats(chats.slice());
+      if (dialog.open) dialog.close();
+    }
   };
 
   const authenticateUser = async (email, password) => {
@@ -268,9 +158,8 @@ function App() {
               ? (
                 <ChatList
                   chatsArray={chats}
-                  usersArray={users}
                   tileClickHandler={openChat}
-                  myUser={myUser}
+                  onClickSaveNewchat={onClickSaveNewchat}
                 />
               )
               : <LoadingMessage />
