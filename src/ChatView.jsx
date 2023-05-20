@@ -59,7 +59,7 @@ function ChatView({
   };
 
   const showMessagesOrLoading = () => {
-    if (chatMessages[0].loading) {
+    if (chatMessages[0] && chatMessages[0].loading) {
       return showLoadingMessage();
     }
     return showMessages();
