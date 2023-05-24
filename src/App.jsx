@@ -74,11 +74,6 @@ function App() {
     });
   };
 
-  socket.on('message to client', (message) => {
-    currentChatMessages.push(message);
-    setCurrentChatMessages(currentChatMessages.slice());
-  });
-
   React.useEffect(() => {
     // cancels if chats have already been fetched, or if the user has not been set
     // need to know the user to know what chats to fetch.
@@ -91,7 +86,16 @@ function App() {
           { chatIds: chatsPromise.map((chat) => `chat_id_${chat.id}`) },
         );
       });
+
+      // only need to listen to this event when logged in
+      // putting the event listener in useEffect prevents duplicate handlers being made
+      // see https://socket.io/how-to/use-with-react
+      socket.on('message to client', (message) => {
+        currentChatMessages.push(message);
+        setCurrentChatMessages(currentChatMessages.slice());
+      });
     }
+    return () => socket.off('message to client');
   }, [myUser]);
 
   if (!myUser) {
