@@ -5,12 +5,23 @@ import ChatView from './ChatView';
 import ChatList from './ChatList';
 import utils from './utils';
 
+// eslint-disable-next-line
+const ls = localStorage;
+
+// TODO handle session timeout when localUser exists
+// TODO better functionality for making new chats
+
+const getLocalUser = () => {
+  if (ls.getItem('localUser')) return JSON.parse(ls.getItem('localUser'));
+  return null;
+};
+const setLocalUser = (user) => ls.setItem('localUser', JSON.stringify(user));
+
 const {
   postJSON,
   fetchChats,
   fetchMsgsByChatID,
   login,
-  fetchMyUser,
   fetchUsers,
 } = utils;
 
@@ -63,7 +74,8 @@ function App() {
 
   const authenticateUser = async (email, password) => {
     const authUser = await login(email, password);
-    setMyUser(authUser.user);
+    setLocalUser(authUser.user);
+    setMyUser(getLocalUser());
     if (!socket.connected) socket.connect();
   };
 
@@ -98,17 +110,9 @@ function App() {
     return () => socket.off('message to client');
   }, [myUser]);
 
-  if (!myUser) {
-    fetchMyUser()
-      .then((res) => {
-        if (res.status === 403) throw new Error('unauthorised request');
-        return res.json();
-      })
-      .then((user) => setMyUser(user))
-      .then(() => {
-        if (!socket.connected) socket.connect();
-      })
-      .catch((err) => console.error(err));
+  // if there is a user model stored in localStorage and no user has been set, use localUser
+  if (getLocalUser() && !myUser) {
+    setMyUser(getLocalUser());
   }
 
   function showView() {
