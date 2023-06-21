@@ -8,7 +8,6 @@ import utils from './utils';
 // eslint-disable-next-line
 const ls = localStorage;
 
-// TODO handle session timeout when localUser exists
 // TODO better functionality for making new chats
 
 const getLocalUser = () => {
@@ -16,6 +15,7 @@ const getLocalUser = () => {
   return null;
 };
 const setLocalUser = (user) => ls.setItem('localUser', JSON.stringify(user));
+const deleteLocalUser = () => ls.removeItem('localUser');
 
 const {
   postJSON,
@@ -90,14 +90,24 @@ function App() {
     // cancels if chats have already been fetched, or if the user has not been set
     // need to know the user to know what chats to fetch.
     if (myUser) {
-      Promise.all([fetchChats(), fetchUsers()]).then(([chatsPromise, usersPromise]) => {
-        setUsers(usersPromise);
-        setChats(chatsPromise);
-        socket.emit(
-          'chats join',
-          { chatIds: chatsPromise.map((chat) => `chat_id_${chat.id}`) },
-        );
-      });
+      // TODO fix bug where it tries to skip the login screen when a user exists in
+      // local storage but the session has expired
+      // perhaps add error to fetching function if the status code != 200
+      Promise.all([fetchChats(), fetchUsers()])
+        .then(([chatsPromise, usersPromise]) => {
+          setUsers(usersPromise);
+          setChats(chatsPromise);
+          socket.emit(
+            'chats join',
+            { chatIds: chatsPromise.map((chat) => `chat_id_${chat.id}`) },
+          );
+        })
+        .catch(() => {
+          // if fetching errors when the app loads,
+          // delete the locally stored user to show the login screen
+          deleteLocalUser();
+          setMyUser(getLocalUser());
+        });
 
       // only need to listen to this event when logged in
       // putting the event listener in useEffect prevents duplicate handlers being made

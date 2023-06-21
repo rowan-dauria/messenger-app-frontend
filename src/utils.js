@@ -14,12 +14,14 @@ async function login(email, password) {
 
 async function fetchChats() {
   const res = await fetch('auth/chats');
+  if (res.status !== 200) throw new Error('Error fetching chats');
   const chats = await res.json();
   return chats;
 }
 
 async function fetchUsers() {
   const res = await fetch('auth/users');
+  if (res.status !== 200) throw new Error('Error fetching chats');
   const users = await res.json();
   return users;
 }
