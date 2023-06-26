@@ -90,9 +90,6 @@ function App() {
     // cancels if chats have already been fetched, or if the user has not been set
     // need to know the user to know what chats to fetch.
     if (myUser) {
-      // TODO fix bug where it tries to skip the login screen when a user exists in
-      // local storage but the session has expired
-      // perhaps add error to fetching function if the status code != 200
       Promise.all([fetchChats(), fetchUsers()])
         .then(([chatsPromise, usersPromise]) => {
           setUsers(usersPromise);
