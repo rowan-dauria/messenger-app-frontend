@@ -12,6 +12,20 @@ async function login(email, password) {
   return json;
 }
 
+async function postNewUser(displayName, email, password) {
+  const bodyJSON = { displayName, email, password };
+  const res = await fetch('/new-user', {
+    method: 'POST',
+    headers: {
+      Accept: 'application/json',
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(bodyJSON),
+  });
+  const json = await res.json();
+  return json;
+}
+
 async function fetchChats() {
   const res = await fetch('auth/chats');
   if (res.status !== 200) throw new Error('Error fetching chats');
@@ -52,6 +66,7 @@ async function postJSON(endpoint, JSONData) {
 
 export default {
   login,
+  postNewUser,
   fetchChats,
   fetchUsers,
   fetchMsgsByChatID,

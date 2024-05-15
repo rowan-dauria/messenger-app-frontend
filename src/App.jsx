@@ -22,6 +22,7 @@ const {
   fetchChats,
   fetchMsgsByChatID,
   login,
+  postNewUser,
   fetchUsers,
 } = utils;
 
@@ -79,6 +80,15 @@ function App() {
     if (!socket.connected) socket.connect();
   };
 
+  const createUser = async (displayName, email, password) => {
+    const newUser = await postNewUser(displayName, email, password);
+    // Authorisation happens automatically on the backend when the user is created
+    // so don't need to authorise the new user here
+    setLocalUser(newUser.user);
+    setMyUser(getLocalUser());
+    if (!socket.connected) socket.connect();
+  };
+
   const openChat = (chatID) => {
     setCurrentChat(chats.filter((chat) => chat.id === chatID)[0]);
     fetchMsgsByChatID(chatID).then((fetchedMessages) => {
@@ -123,7 +133,14 @@ function App() {
   }
 
   function showView() {
-    if (!myUser) return (<Login loginCallback={authenticateUser} />);
+    if (!myUser) {
+      return (
+        <Login
+          loginCallback={authenticateUser}
+          createUserCallback={createUser}
+        />
+      );
+    }
 
     return (
       <div className="App">
