@@ -82,6 +82,13 @@ function ChatList({
           ))
         }
       </div>
+      {/**
+       * "If you pass the ref object to React as a ref attribute
+       * to a JSX node, React will set its current property." from https://react.dev/reference/react/useRef
+       * We have to pass this reference to the dialog box into the onClickSaveNewChat function
+       * because the parent view needs a reference to the dialog to close it after receiving
+       * a response from the server.
+       */}
       <dialog ref={dialogRef}>
         <NewChat
           onClickSave={onClickSave}

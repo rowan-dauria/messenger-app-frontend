@@ -8,8 +8,7 @@ import utils from './utils';
 // eslint-disable-next-line
 const ls = localStorage;
 
-// TODO better functionality for making new chats
-
+// Some getters and setters to regulate how localStorage is used
 const getLocalUser = () => {
   if (ls.getItem('localUser')) return JSON.parse(ls.getItem('localUser'));
   return null;
@@ -26,6 +25,7 @@ const {
   fetchUsers,
 } = utils;
 
+// autoConnect false because a connection should be made only after auth success
 const socket = io('http://localhost:3000', { autoConnect: false });
 socket.on('connect', () => console.log(socket.id));
 
@@ -37,13 +37,24 @@ function LoadingMessage() {
   );
 }
 
+/**
+ * @prop {obj} myUser - the user currently logged in, aka the user obj stored in localStorage
+ * @prop {arrayOf(obj)} chats - the chats myUser is a member of
+ * @prop {arrayOf(obj)} users - all users
+ * @prop {obj} currentChat - the chat currently open for myUser
+ * @prop {arrayOf(obj)} currentChatMessages - all messages with message.chat_id === currentChat.id
+ * @returns {React.ReactComponentElement}
+ */
 function App() {
+  // all these things should update the UI when they are changed
   const [myUser, setMyUser] = React.useState(null);
   const [chats, setChats] = React.useState(null);
   const [users, setUsers] = React.useState(null);
   const [currentChat, setCurrentChat] = React.useState(null);
+  // initial state is loading:true to differentiate from a chat with zero messages.
   const [currentChatMessages, setCurrentChatMessages] = React.useState([{ loading: true }]);
 
+  // callback passed to ChatView
   const onClickSendMessage = async (text, chatID, image = null) => {
     const message = {
       created_by: myUser.id,
@@ -57,16 +68,21 @@ function App() {
     console.log(`socket ${socket.id} sending message to server`);
 
     currentChatMessages.push(message);
+    // update state to refresh view
     setCurrentChatMessages(currentChatMessages.slice());
   };
 
   const onClickSaveNewchat = async (newChatName, newChatMemberEmails, dialog) => {
+    // validate that all required feilds are provided
     if (newChatName && newChatMemberEmails) {
+      // filter users array to contain only the user with a matching email, take the first
+      // element of array and extracts the id
       const memberIds = users.filter((user) => user.email === newChatMemberEmails)[0].id;
       const newChat = await postJSON('/auth/chats', {
         name: newChatName,
         members: [myUser.id, memberIds],
       });
+      // posting to chats endpoint returns an array, so need to get the first element of it
       chats.push(newChat[0]);
       setChats(chats.slice());
       if (dialog.open) dialog.close();
@@ -128,6 +144,7 @@ function App() {
   }, [myUser]);
 
   // if there is a user model stored in localStorage and no user has been set, use localUser
+  // Allows a user to be automatically logged back if they close and re-open tab
   if (getLocalUser() && !myUser) {
     setMyUser(getLocalUser());
   }
