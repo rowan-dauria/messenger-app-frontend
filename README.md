@@ -2,8 +2,8 @@
 
 This is the frontend of my instant messaging app.
 
-- The UI is built in functional React. I chose functional react to develop my understaning of the framework. \
-- I used [socket.io](socket.io) to leverage the Websocket protocol for instant updates from the backend. For example, to immediately update the UI of User A if User B sends them a message, without having to poll the backend for new messages.\
+- The UI is built in functional React. I chose functional react to develop my understaning of the framework.
+- I used [socket.io](socket.io) to leverage the Websocket protocol for instant updates from the backend. For example, to immediately update the UI of User A if User B sends them a message, without having to poll the backend for new messages
 - SASS is used for more expressive and understandable stylesheets.
 
 ## Installation
