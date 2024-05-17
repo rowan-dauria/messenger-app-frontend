@@ -12,5 +12,6 @@ This is the frontend of my instant messaging app.
 If you would like to communicate with the BE, follow the installation instructions for [the backend](https://github.com/rowan-dauria/messenger-app-backend)
 
 1. Clone the repo to your local machine.
-2. run `npm start` at the root of the repo to start the server that serves the frontend.
-3. Visit `localhost:3000` in your browser to view frontend.
+2. run `npm i` to install the dependency packages.
+3. run `npm start` at the root of the repo to start the server that serves the frontend.
+4. Visit `localhost:3000` in your browser to view frontend.
